@@ -39,14 +39,14 @@ app.use(['/api/catering/orders', '/api/masala/enquiries', '/api/oil/enquiries', 
 // Static file serving for uploaded images/videos/FSSAI license
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/catering', cateringRoutes);
-app.use('/api/masala', masalaRoutes);
-app.use('/api/oil', oilRoutes);
-app.use('/api', miscRoutes); // /api/contact, /api/settings, /api/portfolio, /api/upload, /api/admin/*
+// API routes (support both /api/... and direct /... paths)
+app.use(['/api/auth', '/auth'], authRoutes);
+app.use(['/api/catering', '/catering'], cateringRoutes);
+app.use(['/api/masala', '/masala'], masalaRoutes);
+app.use(['/api/oil', '/oil'], oilRoutes);
+app.use(['/api', '/'], miscRoutes); // /api/contact, /api/settings, /api/portfolio, /api/upload, /api/admin/*
 
-app.get('/api/health', (req, res) => res.json({ success: true, message: 'MI Groups API running' }));
+app.get(['/api/health', '/health'], (req, res) => res.json({ success: true, message: 'MI Groups API running' }));
 
 app.use(notFound);
 app.use(errorHandler);
