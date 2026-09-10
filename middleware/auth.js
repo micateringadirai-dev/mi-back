@@ -1,6 +1,6 @@
-const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
+const { verifyToken } = require('../config/jwt');
 
 const protect = asyncHandler(async (req, res, next) => {
   let token;
@@ -16,7 +16,7 @@ const protect = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = verifyToken(token);
     const user = await User.findById(decoded.id);
     if (!user || !user.isActive) {
       res.status(401);

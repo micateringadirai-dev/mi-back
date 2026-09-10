@@ -1,16 +1,11 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
+const { signToken } = require('../config/jwt');
 
 const router = express.Router();
-
-const signToken = (id) =>
-  jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-  });
 
 // @route  POST /api/auth/login
 router.post(
