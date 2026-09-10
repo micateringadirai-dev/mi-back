@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Environment variables & secrets (NEVER COMMIT SENSITIVE KEYS)
+.env
+.env.*
+!.env.example
+
+# Local uploads & temporary media
+uploads/
+temp/
+tmp/
+
+# Logs & debugging
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS metadata & editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
