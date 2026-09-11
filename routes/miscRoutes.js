@@ -2,6 +2,7 @@ const express = require('express');
 const asyncHandler = require('express-async-handler');
 const { ContactEnquiry, PortfolioItem, Setting } = require('../models/Misc');
 const CateringOrder = require('../models/CateringOrder');
+const CateringEvent = require('../models/CateringEvent');
 const MasalaEnquiry = require('../models/MasalaEnquiry');
 const OilEnquiry = require('../models/OilEnquiry');
 const path = require('path');
@@ -173,15 +174,16 @@ router.get(
   '/admin/summary',
   protect,
   asyncHandler(async (req, res) => {
-    const [pendingCatering, newMasala, newOil, newContacts] = await Promise.all([
+    const [pendingCatering, newMasala, newOil, newContacts, activeCookingEvents] = await Promise.all([
       CateringOrder.countDocuments({ status: 'Pending' }),
       MasalaEnquiry.countDocuments({ status: 'New' }),
       OilEnquiry.countDocuments({ status: 'New' }),
       ContactEnquiry.countDocuments({ status: 'New' }),
+      CateringEvent.countDocuments({ isActive: true }),
     ]);
     res.json({
       success: true,
-      data: { pendingCatering, newMasala, newOil, newContacts },
+      data: { pendingCatering, newMasala, newOil, newContacts, activeCookingEvents },
     });
   })
 );
