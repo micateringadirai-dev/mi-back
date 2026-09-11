@@ -14,7 +14,7 @@ const oilProductSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      enum: ['Sesame Oil (Nallennai)', 'Coconut Oil', 'Groundnut Oil'],
+      trim: true,
     },
     description: { type: String, default: '' },
     images: [{ type: String }],

@@ -10,7 +10,9 @@ const User = require('../models/User');
   const email = process.env.ADMIN_EMAIL;
   const existing = await User.findOne({ email });
   if (existing) {
-    console.log(`Admin already exists: ${email}`);
+    existing.password = process.env.ADMIN_PASSWORD;
+    await existing.save();
+    console.log(`Admin password updated for: ${email}`);
     process.exit(0);
   }
   await User.create({
