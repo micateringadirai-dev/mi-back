@@ -118,7 +118,7 @@ router.post(
   '/enquiries',
   [
     body('productName').notEmpty(),
-    body('quantityKg').isFloat({ min: 0.5 }),
+    body('quantityKg').isFloat({ min: 0.01 }),
     body('customerName').notEmpty(),
     body('phoneNumber').isLength({ min: 10 }),
     body('address').notEmpty(),

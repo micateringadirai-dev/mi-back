@@ -6,7 +6,7 @@ const grindingServiceSchema = new mongoose.Schema(
     category: { type: String, default: 'Spices' }, // e.g. "Spices", "Blends", "Grains & Flours"
     grindingType: { type: String, default: 'Fine Powder Grinding' }, // e.g. "Fine Powder", "Coarse Crushing", "Stone Ground"
     pricePerKg: { type: Number, required: true, min: 0 }, // e.g. 25
-    minQuantityKg: { type: Number, default: 1, min: 0.1 },
+    minQuantityKg: { type: Number, default: 1, min: 0 },
     notes: { type: String, default: '' }, // e.g. "Must be sun-dried and cleaned"
     image: { type: String, default: '' },
     isActive: { type: Boolean, default: true },

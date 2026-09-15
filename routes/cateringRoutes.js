@@ -56,7 +56,7 @@ router.post(
     }
 
     if (deliveryType === 'Self Service' && !address) {
-      address = 'Self Service / Kitchen Pickup (MI Catering Kitchen, Adirampattinam)';
+      address = 'Self Service / Kitchen Pickup (M I CATERING SERVICE, KALLUKOLLAI, Adirampattinam - 614701)';
     }
 
     const orderType = req.body.orderType || (req.body.event ? 'pre-order' : 'quotation');

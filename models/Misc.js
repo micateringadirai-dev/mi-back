@@ -8,7 +8,7 @@ const contactEnquirySchema = new mongoose.Schema(
     email: { type: String, default: '' },
     business: {
       type: String,
-      enum: ['MI Catering', 'Ibrahim Masala Mill', 'Aafiya Cold Pressed Oils', 'General'],
+      enum: ['MI Catering', 'Ibrahim Masala Mill', 'Afiyah Cold Pressed Oils', 'General'],
       default: 'General',
     },
     message: { type: String, required: true },
@@ -22,7 +22,7 @@ const portfolioItemSchema = new mongoose.Schema(
   {
     business: {
       type: String,
-      enum: ['MI Catering', 'Ibrahim Masala Mill', 'Aafiya Cold Pressed Oils', 'Afia Cold Press Oil'],
+      enum: ['MI Catering', 'Ibrahim Masala Mill', 'Afiyah Cold Pressed Oils', 'Afia Cold Press Oil'],
       required: true,
     },
     type: { type: String, enum: ['image', 'video'], default: 'image' },
