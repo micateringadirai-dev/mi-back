@@ -303,9 +303,11 @@ router.delete(
 router.get(
   '/admin/orders/export/excel',
   asyncHandler(async (req, res) => {
-    const { date, status, itemName, deliveryType, mode } = req.query;
+    const { date, from, to, status, search, deliveryType, orderType, itemName, mode } = req.query;
     const filter = {};
     if (status) filter.status = status;
+    if (orderType) filter.orderType = orderType;
+    if (itemName) filter.itemName = new RegExp(itemName, 'i');
     if (deliveryType && deliveryType !== 'all') {
       filter.deliveryType = deliveryType === 'Delivery' ? { $ne: 'Self Service' } : deliveryType;
     }
@@ -314,19 +316,31 @@ router.get(
       const next = new Date(d);
       next.setDate(next.getDate() + 1);
       filter.orderDate = { $gte: d, $lt: next };
+    } else if (from && to) {
+      filter.orderDate = { $gte: new Date(from), $lte: new Date(to) };
+    }
+    if (search) {
+      filter.$or = [
+        { customerName: new RegExp(search, 'i') },
+        { mobileNumber: new RegExp(search, 'i') },
+        { itemName: new RegExp(search, 'i') },
+        { address: new RegExp(search, 'i') },
+      ];
     }
 
     const orders = await CateringOrder.find(filter).sort({ orderDate: 1 }).lean();
 
-    // If prep mode or date specified, generate comprehensive 2-sheet kitchen prep review
+    // If prep mode or date specified, generate comprehensive 2-sheet kitchen prep review with below table details
     if (mode === 'prep' || date) {
       const filename = `kitchen-prep-review-${date || 'all'}.xlsx`;
       return await exportCateringPrepExcel(res, filename, date, orders);
     }
 
     const rows = orders.map((o) => ({
-      itemName: o.itemName,
+      orderRef: `#${(o._id || '').toString().slice(-6).toUpperCase()}`,
       orderType: o.orderType === 'quotation' ? 'Quotation' : 'Pre-Order',
+      itemName: o.itemName,
+      portionUnit: o.portionUnit || 'Packet',
       deliveryType: o.deliveryType || 'Delivery',
       customerName: o.customerName,
       mobileNumber: o.mobileNumber,
@@ -339,9 +353,9 @@ router.get(
       discountAmount: o.discountAmount > 0 ? `-₹${o.discountAmount}` : '-',
       finalAmount: o.finalAmount ? `₹${o.finalAmount}` : (o.estimatedAmount ? `₹${o.estimatedAmount}` : '-'),
       orderDate: new Date(o.orderDate).toDateString(),
-      address: o.address,
-      foodRequirements: o.foodRequirements,
-      additionalNotes: o.additionalNotes,
+      address: o.address || '-',
+      foodRequirements: o.foodRequirements || '-',
+      additionalNotes: o.additionalNotes || '-',
       status: o.status,
       createdAt: new Date(o.createdAt).toLocaleString(),
     }));
@@ -350,8 +364,10 @@ router.get(
       res,
       `catering-orders-${deliveryType ? deliveryType.toLowerCase().replace(/\s+/g, '-') + '-' : ''}${date || 'all'}.xlsx`,
       [
+        { header: 'Order Ref', key: 'orderRef', width: 14 },
         { header: 'Order Type', key: 'orderType', width: 14 },
-        { header: 'Item / Event', key: 'itemName', width: 20 },
+        { header: 'Item / Event', key: 'itemName', width: 22 },
+        { header: 'Portion Unit', key: 'portionUnit', width: 16 },
         { header: 'Delivery Mode', key: 'deliveryType', width: 16 },
         { header: 'Customer Name', key: 'customerName', width: 18 },
         { header: 'Mobile', key: 'mobileNumber', width: 15 },
