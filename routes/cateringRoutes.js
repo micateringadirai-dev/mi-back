@@ -303,7 +303,8 @@ router.delete(
 router.get(
   '/admin/orders/export/excel',
   asyncHandler(async (req, res) => {
-    const { date, from, to, status, search, deliveryType, orderType, itemName, mode } = req.query;
+    const { date, from, to, status, search, deliveryType, orderType, itemName, mode, format } = req.query;
+    const isCsv = format === 'csv';
     const filter = {};
     if (status) filter.status = status;
     if (orderType) filter.orderType = orderType;
@@ -330,10 +331,10 @@ router.get(
 
     const orders = await CateringOrder.find(filter).sort({ orderDate: 1 }).lean();
 
-    // If prep mode or date specified, generate comprehensive 2-sheet kitchen prep review with below table details
+    // If prep mode or date specified, generate comprehensive kitchen prep review
     if (mode === 'prep' || date) {
-      const filename = `kitchen-prep-review-${date || 'all'}.xlsx`;
-      return await exportCateringPrepExcel(res, filename, date, orders);
+      const filename = `kitchen-prep-review-${date || 'all'}.${isCsv ? 'csv' : 'xlsx'}`;
+      return await exportCateringPrepExcel(res, filename, date, orders, isCsv ? 'csv' : 'xlsx');
     }
 
     const rows = orders.map((o) => ({
@@ -362,7 +363,7 @@ router.get(
 
     await exportToExcel(
       res,
-      `catering-orders-${deliveryType ? deliveryType.toLowerCase().replace(/\s+/g, '-') + '-' : ''}${date || 'all'}.xlsx`,
+      `catering-orders-${deliveryType ? deliveryType.toLowerCase().replace(/\s+/g, '-') + '-' : ''}${date || 'all'}.${isCsv ? 'csv' : 'xlsx'}`,
       [
         { header: 'Order Ref', key: 'orderRef', width: 14 },
         { header: 'Order Type', key: 'orderType', width: 14 },
@@ -383,7 +384,8 @@ router.get(
         { header: 'Status', key: 'status', width: 14 },
         { header: 'Submitted At', key: 'createdAt', width: 22 },
       ],
-      rows
+      rows,
+      isCsv ? 'csv' : 'xlsx'
     );
   })
 );

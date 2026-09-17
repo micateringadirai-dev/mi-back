@@ -1,6 +1,10 @@
 const ExcelJS = require('exceljs');
 
-async function exportCateringPrepExcel(res, filename, dateStr, orders) {
+async function exportCateringPrepExcel(res, filename, dateStr, orders, format = 'xlsx') {
+  if (format === 'csv') {
+    return await exportCateringPrepCsv(res, filename, dateStr, orders);
+  }
+
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'MI Catering Services';
   workbook.created = new Date();
@@ -454,7 +458,130 @@ async function exportCateringPrepExcel(res, filename, dateStr, orders) {
   res.end();
 }
 
-async function exportToExcel(res, filename, columns, rows) {
+function escapeCsv(val) {
+  if (val === null || val === undefined) return '';
+  const s = String(val).replace(/"/g, '""');
+  if (s.search(/("|,|\n|\r)/g) >= 0) {
+    return `"${s}"`;
+  }
+  return s;
+}
+
+async function exportToCsv(res, filename, columns, rows) {
+  const csvFilename = filename.replace(/\.xlsx$/i, '.csv');
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${csvFilename}"`);
+  res.write('\uFEFF');
+
+  const headerLine = columns.map((c) => escapeCsv(c.header)).join(',');
+  const rowLines = rows.map((r) => columns.map((c) => escapeCsv(r[c.key])).join(','));
+  const csvContent = [headerLine, ...rowLines].join('\r\n');
+  res.write(csvContent);
+  res.end();
+}
+
+async function exportCateringPrepCsv(res, filename, dateStr, orders) {
+  const csvFilename = filename.replace(/\.xlsx$/i, '.csv');
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${csvFilename}"`);
+  res.write('\uFEFF');
+
+  const lines = [];
+  lines.push(['MI CATERING SERVICES - KITCHEN PREPARATION & BOOKED ORDERS REVIEW']);
+  const totalPackets = orders.reduce((sum, o) => sum + (Number(o.numberOfPackets) || 0), 0);
+  lines.push([`Scheduled Date: ${dateStr ? new Date(dateStr).toDateString() : 'All Dates'} | Total Bookings: ${orders.length} | Total Packets: ${totalPackets}`]);
+  lines.push([]);
+
+  // Section 1: Main Dishes
+  lines.push(['1. MAIN DISHES TO PREPARE (KITCHEN QUANTITIES)']);
+  lines.push(['Main Dish / Menu Item', 'Portion Unit', 'Total Quantity (Packets)', 'Orders Count', 'Revenue Est.']);
+  
+  const dishMap = {};
+  orders.forEach((o) => {
+    const key = `${o.itemName}___${o.portionUnit || 'Packet'}`;
+    if (!dishMap[key]) {
+      dishMap[key] = {
+        name: o.itemName,
+        portionUnit: o.portionUnit || 'Packet',
+        quantity: 0,
+        ordersCount: 0,
+        subtotal: 0,
+      };
+    }
+    dishMap[key].quantity += Number(o.numberOfPackets) || 0;
+    dishMap[key].ordersCount += 1;
+    dishMap[key].subtotal += Number(o.subtotalAmount || o.estimatedAmount) || 0;
+  });
+
+  Object.values(dishMap).forEach((d) => {
+    lines.push([d.name, d.portionUnit, d.quantity, d.ordersCount, `₹${d.subtotal.toLocaleString('en-IN')}`]);
+  });
+  lines.push([]);
+
+  // Section 2: Extra Side Dishes
+  lines.push(['2. EXTRA SIDE DISHES & ADD-ONS TO PREPARE']);
+  lines.push(['Extra Side Dish / Add-On', 'Portion', 'Total Portions', 'Orders Count', 'Extra Revenue']);
+  const extrasMap = {};
+  orders.forEach((o) => {
+    if (Array.isArray(o.selectedExtras)) {
+      o.selectedExtras.forEach((ex) => {
+        if (!ex.name) return;
+        const key = `${ex.name}___${ex.portion || ''}`;
+        if (!extrasMap[key]) {
+          extrasMap[key] = {
+            name: ex.name,
+            portion: ex.portion || '—',
+            quantity: 0,
+            ordersCount: 0,
+            revenue: 0,
+          };
+        }
+        extrasMap[key].quantity += Number(ex.quantity) || 1;
+        extrasMap[key].ordersCount += 1;
+        extrasMap[key].revenue += (Number(ex.price) || 0) * (Number(ex.quantity) || 1);
+      });
+    }
+  });
+
+  Object.values(extrasMap).forEach((e) => {
+    lines.push([e.name, e.portion, e.quantity, e.ordersCount, `₹${e.revenue.toLocaleString('en-IN')}`]);
+  });
+  lines.push([]);
+
+  // Section 3: All Booked Orders Manifest
+  lines.push(['3. ALL BOOKED ORDERS (DISPATCH & CUSTOMER MANIFEST)']);
+  lines.push(['Order Ref', 'Type', 'Item Name', 'Portion Unit', 'Packets', 'Delivery Mode', 'Customer Name', 'Mobile', 'Order Date', 'Address / Location', 'Side Dishes', 'Total Payable', 'Status']);
+  orders.forEach((o) => {
+    const extrasStr = Array.isArray(o.selectedExtras) && o.selectedExtras.length > 0
+      ? o.selectedExtras.map((e) => `${e.name} (${e.quantity || 1})`).join('; ')
+      : '-';
+    lines.push([
+      `#${(o._id || '').toString().slice(-6).toUpperCase()}`,
+      o.orderType === 'quotation' ? 'Quotation' : 'Pre-Order',
+      o.itemName,
+      o.portionUnit || 'Packet',
+      o.numberOfPackets,
+      o.deliveryType || 'Delivery',
+      o.customerName,
+      o.mobileNumber,
+      new Date(o.orderDate).toDateString(),
+      o.address || '-',
+      extrasStr,
+      o.finalAmount ? `₹${o.finalAmount}` : (o.estimatedAmount ? `₹${o.estimatedAmount}` : '-'),
+      o.status,
+    ]);
+  });
+
+  const csvContent = lines.map((row) => row.map(escapeCsv).join(',')).join('\r\n');
+  res.write(csvContent);
+  res.end();
+}
+
+async function exportToExcel(res, filename, columns, rows, format = 'xlsx') {
+  if (format === 'csv') {
+    return await exportToCsv(res, filename, columns, rows);
+  }
+
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Orders');
 
@@ -498,5 +625,7 @@ async function exportToExcel(res, filename, columns, rows) {
 
 exportToExcel.exportToExcel = exportToExcel;
 exportToExcel.exportCateringPrepExcel = exportCateringPrepExcel;
+exportToExcel.exportToCsv = exportToCsv;
+exportToExcel.exportCateringPrepCsv = exportCateringPrepCsv;
 
 module.exports = exportToExcel;

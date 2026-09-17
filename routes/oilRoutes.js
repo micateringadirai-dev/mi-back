@@ -122,6 +122,7 @@ router.patch(
 router.get(
   '/admin/enquiries/export/excel',
   asyncHandler(async (req, res) => {
+    const isCsv = req.query.format === 'csv';
     const enquiries = await OilEnquiry.find().sort({ createdAt: -1 }).lean();
     const rows = enquiries.map((e) => ({
       productName: e.productName,
@@ -136,7 +137,7 @@ router.get(
     }));
     await exportToExcel(
       res,
-      'oil-enquiries.xlsx',
+      `oil-enquiries.${isCsv ? 'csv' : 'xlsx'}`,
       [
         { header: 'Product', key: 'productName' },
         { header: 'Size', key: 'size', width: 12 },
@@ -148,7 +149,8 @@ router.get(
         { header: 'Status', key: 'status' },
         { header: 'Submitted At', key: 'createdAt', width: 22 },
       ],
-      rows
+      rows,
+      isCsv ? 'csv' : 'xlsx'
     );
   })
 );

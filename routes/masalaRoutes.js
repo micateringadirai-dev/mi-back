@@ -266,6 +266,7 @@ router.patch(
 router.get(
   '/admin/enquiries/export/excel',
   asyncHandler(async (req, res) => {
+    const isCsv = req.query.format === 'csv';
     const enquiries = await MasalaEnquiry.find().sort({ createdAt: -1 }).lean();
     const rows = enquiries.map((e) => ({
       productName: e.productName,
@@ -279,7 +280,7 @@ router.get(
     }));
     await exportToExcel(
       res,
-      'masala-enquiries.xlsx',
+      `masala-enquiries.${isCsv ? 'csv' : 'xlsx'}`,
       [
         { header: 'Product', key: 'productName' },
         { header: 'Quantity (kg)', key: 'quantityKg', width: 14 },
@@ -290,7 +291,8 @@ router.get(
         { header: 'Status', key: 'status' },
         { header: 'Submitted At', key: 'createdAt', width: 22 },
       ],
-      rows
+      rows,
+      isCsv ? 'csv' : 'xlsx'
     );
   })
 );
