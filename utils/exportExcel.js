@@ -448,14 +448,14 @@ async function exportCateringPrepExcel(res, filename, dateStr, orders, format = 
     });
   });
 
+  const buffer = await workbook.xlsx.writeBuffer();
   res.setHeader(
     'Content-Type',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   );
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-
-  await workbook.xlsx.write(res);
-  res.end();
+  res.setHeader('Content-Length', buffer.length);
+  return res.send(Buffer.from(buffer));
 }
 
 function escapeCsv(val) {
@@ -613,14 +613,14 @@ async function exportToExcel(res, filename, columns, rows, format = 'xlsx') {
     });
   });
 
+  const buffer = await workbook.xlsx.writeBuffer();
   res.setHeader(
     'Content-Type',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   );
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-
-  await workbook.xlsx.write(res);
-  res.end();
+  res.setHeader('Content-Length', buffer.length);
+  return res.send(Buffer.from(buffer));
 }
 
 exportToExcel.exportToExcel = exportToExcel;
